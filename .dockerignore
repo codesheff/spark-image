@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+.dockerignore
+README.md
+project-plan.md
+*.md
+.DS_Store
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+venv

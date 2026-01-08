@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  spark-livy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SPARK_VERSION: 3.3.2
+        LIVY_VERSION: 0.7.1
+    image: spark-livy:latest
+    container_name: spark-livy
+    ports:
+      - "8998:8998"  # Livy REST API
+      - "7077:7077"  # Spark Master
+      - "6066:6066"  # Spark Web UI
+    environment:
+      SPARK_MASTER_WEBUI_PORT: 6066
+      SPARK_LOCAL_IP: localhost
+    volumes:
+      - ./config:/opt/livy/conf:ro
+    networks:
+      - spark-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8998/sessions"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  spark-network:
+    driver: bridge
