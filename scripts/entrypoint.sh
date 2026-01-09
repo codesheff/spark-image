@@ -6,6 +6,16 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/setup-env.sh"
 
+# Set Scala and Python paths for Livy/Spark
+export SCALA_HOME=$SPARK_HOME/jars
+export SPARK_CLASSPATH=$SPARK_HOME/jars/*:$SPARK_HOME/lib/*
+export PYSPARK_PYTHON=/usr/bin/python3
+export PYSPARK_DRIVER_PYTHON=/usr/bin/python3
+
+# Workaround for Scala compatibility with Livy 0.7.1
+# Add all jar files to classpath
+export CLASSPATH=$SPARK_HOME/jars/*:$SPARK_HOME/lib/*:$CLASSPATH
+
 # Default command
 CMD="${1:-livy-server}"
 
@@ -15,6 +25,7 @@ echo "========================================="
 echo "Spark Version: $(cat $SPARK_HOME/RELEASE | grep "Spark" || echo "Unknown")"
 echo "Livy Home: $LIVY_HOME"
 echo "Spark Home: $SPARK_HOME"
+echo "Python: $PYSPARK_PYTHON"
 echo "Starting command: $CMD"
 echo "========================================="
 

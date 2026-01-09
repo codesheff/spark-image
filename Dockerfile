@@ -1,5 +1,12 @@
 # Multi-stage Docker build for Spark and Livy
 # This Dockerfile creates a production-ready image with Apache Spark and Livy
+# 
+# Build with custom versions:
+#   docker build \
+#     --build-arg SPARK_VERSION=2.4.8 \
+#     --build-arg LIVY_VERSION=0.7.1 \
+#     -t spark-livy:2.4.8 .
+
 # Stage 1: Builder
 FROM eclipse-temurin:11-jdk-jammy AS builder
 
@@ -13,14 +20,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
+# Build arguments with defaults (Spark 2.4.8 + Livy 0.7.1 for compatibility)
+ARG SPARK_VERSION=2.4.8
+ARG LIVY_VERSION=0.7.1
+
 # Download Spark
-ARG SPARK_VERSION=3.3.2
-RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
-    tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
-    rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
+RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && \
+    tar -xzf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && \
+    rm spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
 
 # Download Livy
-ARG LIVY_VERSION=0.7.1
 RUN wget https://archive.apache.org/dist/incubator/livy/${LIVY_VERSION}-incubating/apache-livy-${LIVY_VERSION}-incubating-bin.zip && \
     unzip apache-livy-${LIVY_VERSION}-incubating-bin.zip && \
     rm apache-livy-${LIVY_VERSION}-incubating-bin.zip
@@ -28,6 +37,8 @@ RUN wget https://archive.apache.org/dist/incubator/livy/${LIVY_VERSION}-incubati
 # Stage 2: Runtime
 FROM eclipse-temurin:11-jdk-jammy
 
+ARG SPARK_VERSION=2.4.8
+ARG LIVY_VERSION=0.7.1
 ARG SPARK_VERSION=3.3.2
 ARG LIVY_VERSION=0.7.1
 
@@ -39,10 +50,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     procps \
+    python3 \
+    python3-distutils \
+    scala \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Spark from builder
-COPY --from=builder /tmp/spark-${SPARK_VERSION}-bin-hadoop3 /opt/spark
+# Copy Spark from builder (handle both hadoop2.7 and hadoop3 versions)
+COPY --from=builder /tmp/spark-${SPARK_VERSION}-bin-hadoop* /opt/spark/
 
 # Copy Livy from builder
 COPY --from=builder /tmp/apache-livy-${LIVY_VERSION}-incubating-bin /opt/livy
