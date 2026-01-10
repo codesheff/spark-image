@@ -225,23 +225,81 @@ if [ $SCALA_READY -eq 1 ]; then
     echo ""
 fi
 
+echo ""
+echo "Step 6: Waiting for Sessions to Stabilize"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Allowing sessions to fully initialize and show any errors..."
+sleep 5
+echo "✅ Wait complete"
+echo ""
+
+# Function to check session final state and logs for errors
+check_session_state() {
+    local session_id=$1
+    local session_name=$2
+    
+    SESSION_STATE=$(curl -s "http://${LIVY_HOST}:${LIVY_PORT}/sessions/$session_id" | jq -r '.state')
+    SESSION_LOGS=$(curl -s "http://${LIVY_HOST}:${LIVY_PORT}/sessions/$session_id" | jq '.log | join("\n")' -r)
+    
+    if [ "$SESSION_STATE" = "error" ] || [ "$SESSION_STATE" = "dead" ]; then
+        echo "  ❌ $session_name (Session $session_id): State = $SESSION_STATE"
+        if [ ! -z "$SESSION_LOGS" ] && [ "$SESSION_LOGS" != "null" ]; then
+            echo "     Error Details:"
+            echo "$SESSION_LOGS" | head -5 | sed 's/^/       /'
+        fi
+        return 1
+    else
+        echo "  ✅ $session_name (Session $session_id): State = $SESSION_STATE"
+        return 0
+    fi
+}
+
 # Summary
-echo "Step 6: Summary"
+echo "Step 7: Verifying Session States"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Checking final session states and logs for errors..."
+echo ""
+
+PYSPARK_ERROR=0
+SCALA_ERROR=0
+
+if [ $PYSPARK_READY -eq 1 ]; then
+    check_session_state "$PYSPARK_ID" "PySpark Session" || PYSPARK_ERROR=1
+else
+    echo "  ⚠️  PySpark Session $PYSPARK_ID: SKIPPED (did not reach ready state)"
+fi
+
+if [ $SCALA_READY -eq 1 ]; then
+    check_session_state "$SCALA_ID" "Scala Session" || SCALA_ERROR=1
+else
+    echo "  ⚠️  Scala Session $SCALA_ID: SKIPPED (did not reach ready state)"
+fi
+
+echo ""
+echo "Step 8: Summary"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 FINAL_SESSIONS=$(curl -s http://${LIVY_HOST}:${LIVY_PORT}/sessions | jq '.total')
 
 echo "Session Summary:"
 if [ $PYSPARK_READY -eq 1 ]; then
-    echo "  ✅ PySpark Session $PYSPARK_ID: READY"
+    if [ $PYSPARK_ERROR -eq 0 ]; then
+        echo "  ✅ PySpark Session $PYSPARK_ID: OPERATIONAL"
+    else
+        echo "  ❌ PySpark Session $PYSPARK_ID: ERROR STATE"
+    fi
 else
-    echo "  ⚠️  PySpark Session $PYSPARK_ID: NOT READY (status: $STATE)"
+    echo "  ⚠️  PySpark Session $PYSPARK_ID: NOT READY"
 fi
 
 if [ $SCALA_READY -eq 1 ]; then
-    echo "  ✅ Scala Session $SCALA_ID: READY"
+    if [ $SCALA_ERROR -eq 0 ]; then
+        echo "  ✅ Scala Session $SCALA_ID: OPERATIONAL"
+    else
+        echo "  ❌ Scala Session $SCALA_ID: ERROR STATE"
+    fi
 else
-    echo "  ⚠️  Scala Session $SCALA_ID: NOT READY (status: $STATE)"
+    echo "  ⚠️  Scala Session $SCALA_ID: NOT READY"
 fi
 
 echo ""
@@ -250,10 +308,15 @@ echo "  Sessions created this test: $((FINAL_SESSIONS - INITIAL_SESSIONS))"
 echo "  Total active sessions: $FINAL_SESSIONS"
 echo ""
 
-if [ $PYSPARK_READY -eq 1 ] && [ $SCALA_READY -eq 1 ]; then
-    echo "✅ TEST PASSED - Both PySpark and Scala sessions working"
-    exit 0
-else
+TEST_FAILED=0
+if [ $PYSPARK_ERROR -eq 1 ] || [ $SCALA_ERROR -eq 1 ]; then
+    echo "❌ TEST FAILED - One or more sessions ended in error state"
+    TEST_FAILED=1
+elif [ $PYSPARK_READY -eq 0 ] || [ $SCALA_READY -eq 0 ]; then
     echo "⚠️  PARTIAL SUCCESS - Some sessions did not initialize"
-    exit 1
+    TEST_FAILED=1
+else
+    echo "✅ TEST PASSED - Both PySpark and Scala sessions operational"
 fi
+
+exit $TEST_FAILED
