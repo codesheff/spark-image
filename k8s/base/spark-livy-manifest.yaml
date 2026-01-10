@@ -65,7 +65,7 @@ data:
     spec:
       containers:
       - name: spark-driver
-        image: stedoh/spark-livy:2.4.8
+        image: stedoh/spark-livy:latest
         imagePullPolicy: IfNotPresent
         resources:
           requests:
@@ -97,7 +97,7 @@ data:
     spec:
       containers:
       - name: spark-executor
-        image: stedoh/spark-livy:2.4.8
+        image: stedoh/spark-livy:latest
         imagePullPolicy: IfNotPresent
         resources:
           requests:
@@ -203,7 +203,7 @@ spec:
       serviceAccountName: spark-livy-sa
       containers:
       - name: spark-livy
-        image: stedoh/spark-livy:2.4.8
+        image: stedoh/spark-livy:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8998

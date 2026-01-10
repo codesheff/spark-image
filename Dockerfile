@@ -1,11 +1,21 @@
 # Multi-stage Docker build for Spark and Livy
 # This Dockerfile creates a production-ready image with Apache Spark and Livy
 # 
+# IMPORTANT: Python Compatibility Notes
+# - Spark 2.4.8: Has PySpark compatibility issues with Python 3.10+ (cloudpickle)
+#   Use Scala sessions only, or upgrade to Spark 3.5.7+
+# - Spark 3.5.7+: Full PySpark support with Python 3.10+
+# 
 # Build with custom versions:
 #   docker build \
 #     --build-arg SPARK_VERSION=2.4.8 \
 #     --build-arg LIVY_VERSION=0.7.1 \
 #     -t spark-livy:2.4.8 .
+#   
+#   docker build \
+#     --build-arg SPARK_VERSION=3.5.7 \
+#     --build-arg LIVY_VERSION=0.8.0 \
+#     -t spark-livy:3.5.7 .
 
 # Stage 1: Builder
 FROM eclipse-temurin:11-jdk-jammy AS builder
@@ -55,7 +65,10 @@ ARG LIVY_VERSION=0.7.1
 
 WORKDIR /opt
 
-# Install runtime dependencies
+# Install runtime dependencies with version-appropriate Python
+# Spark 2.4.8 has compatibility issues with Python 3.10+ (cloudpickle)
+# We'll use python3 (3.10/3.11) for 2.4.8 as well, but document the limitation
+# Spark 3.5.7+ fully supports Python 3.10+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \

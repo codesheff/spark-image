@@ -193,21 +193,33 @@ kubectl exec -it deployment/spark-livy -n spark-livy \
 # Expected: 0 sessions remaining
 ```
 
-### 4.3 Update Deployment Image
+### 4.3 Update Kustomize Overlays
 ```bash
-# Update to new version
-kubectl set image deployment/spark-livy \
-  spark-livy=stedoh/spark-livy:3.5.7 \
-  -n spark-livy
+# Update the generate-overlays script if adding new versions
+# Edit scripts/generate-overlays.sh and add new version to VERSIONS array
+# Example for Spark X.Y.Z + Livy A.B.C:
+#   ["X.Y.Z"]="A.B.C"
 
-# Trigger rollout
-kubectl rollout restart deployment/spark-livy -n spark-livy
+# Regenerate all overlay kustomization.yaml files
+./scripts/generate-overlays.sh
+
+# Verify overlays were generated correctly
+kubectl kustomize k8s/overlays/spark-3.5.7/ | grep "image: stedoh" | sort -u
+```
+
+### 4.4 Deploy Using Kustomize
+```bash
+# For standard production deployment (recommended)
+kubectl apply -k k8s/overlays/spark-3.5.7/
+
+# Or for Spark 2.4.8 (if needed)
+kubectl apply -k k8s/overlays/spark-2.4.8/
 
 # Watch deployment progress
 kubectl rollout status deployment/spark-livy -n spark-livy -w
 ```
 
-### 4.4 Verify New Deployment
+### 4.5 Verify New Deployment
 ```bash
 # Check pod is running
 kubectl get pods -n spark-livy

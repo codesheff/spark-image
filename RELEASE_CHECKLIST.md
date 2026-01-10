@@ -316,6 +316,14 @@ Releasing a new image involves multiple stages:
 
 ### 6. Update Build & Deployment Configuration
 
+- [ ] **Update Kustomize overlays**
+  - [ ] Edit `scripts/generate-overlays.sh`
+  - [ ] Add new version to `VERSIONS` array in the format: `["SPARK_VERSION"]="LIVY_VERSION"`
+  - [ ] Example: `["3.5.7"]="0.8.0"` for Spark 3.5.7 + Livy 0.8.0
+  - [ ] Run: `./scripts/generate-overlays.sh`
+  - [ ] Verify files generated: `ls -la k8s/overlays/spark-X.Y.Z/`
+  - [ ] Test overlay: `kubectl kustomize k8s/overlays/spark-X.Y.Z/ | grep "image:"`
+
 - [ ] **Update CI/CD configuration** (if using GitHub Actions)
   - [ ] Add new version to build matrix
   - [ ] Update default version
@@ -323,7 +331,7 @@ Releasing a new image involves multiple stages:
   - [ ] Verify build pipeline still works
 
 - [ ] **Update Kubernetes manifests** (if needed)
-  - [ ] Update example manifests with new version
+  - [ ] Base manifest remains version-agnostic (uses :latest)
   - [ ] Verify resource limits still appropriate
   - [ ] Update any version-specific environment variables
 
@@ -450,6 +458,14 @@ Releasing a new image involves multiple stages:
 
 - [ ] **First production deployment** (if applicable)
   ```bash
+  # Option 1: Using Kustomize (Recommended)
+  # Verify overlays generated correctly
+  ./scripts/generate-overlays.sh
+  
+  # Deploy with Kustomize
+  kubectl apply -k k8s/overlays/spark-X.Y.Z/
+  
+  # Option 2: Manual deployment (Legacy)
   # Update deployment
   kubectl set image deployment/spark-livy \
     spark-livy=stedoh/spark-livy:X.Y.Z \

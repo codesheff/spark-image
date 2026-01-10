@@ -34,7 +34,8 @@ docker build -t spark-livy:2.4.8 .
 ### Option 3: Deploy to Kubernetes
 
 ```bash
-# Apply the Kubernetes manifests
+# Create and apply the Kubernetes manifests
+release-version.sh 2.4.8 0.7.1 # or 3.5.7 0.7.0
 kubectl apply -f k8s/spark-livy-manifest.yaml
 
 # Verify deployment
