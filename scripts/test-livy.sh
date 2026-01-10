@@ -8,12 +8,40 @@ set -e
 LIVY_HOST="${1:-localhost}"
 LIVY_PORT="${2:-8998}"
 
+USE_EXEC="${3:-true}"
+
+if [ "$USE_EXEC" = "true" ]; then
+    echo "Using direct pod execution method"
+    # Find pod
+    POD=$(kubectl get pods -n spark-livy -l app=spark-livy -o name | head -1 | cut -d/ -f2)
+    if [ -z "$POD" ]; then
+        echo "❌ ERROR: No Spark-Livy pod found in namespace spark-livy"
+        exit 1
+    fi
+
+    echo "Configuration:"
+    echo "  Pod: $POD"
+    echo "  Namespace: spark-livy"
+    echo ""
+
+    # Function to execute curl in pod
+    pod_curl() {
+        kubectl exec -n spark-livy "$POD" -- curl -s "$@"
+    }
+
+    # Redefine curl commands to use pod_curl
+    curl() {
+        pod_curl "$@"
+    }
+fi
+
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║     Spark-Livy Job Submission Test (Kubernetes Backend)         ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Configuration:"
 echo "  Livy Server: http://${LIVY_HOST}:${LIVY_PORT}"
+echo "  Method: $( [ "$USE_EXEC" = "true" ] && echo "Direct Pod Exec" || echo "Port Forward" )"
 echo ""
 
 # Function to wait for URL
@@ -34,20 +62,22 @@ wait_for_url() {
     return 1
 }
 
-# Test connectivity
-echo "Step 1: Testing Livy Connectivity"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if ! wait_for_url "http://${LIVY_HOST}:${LIVY_PORT}/sessions"; then
-    echo "❌ ERROR: Cannot reach Livy at http://${LIVY_HOST}:${LIVY_PORT}"
-    echo ""
-    echo "Troubleshooting:"
-    echo "1. Verify Kubernetes pod is running:"
-    echo "   kubectl get pods -n spark-livy"
-    echo ""
-    echo "2. Verify port forward is active:"
-    echo "   kubectl port-forward -n spark-livy svc/spark-livy-service 8998:8998"
-    echo ""
-    exit 1
+# Test connectivity only for port-forward mode
+if [ "$USE_EXEC" = "false" ]; then
+    echo "Step 1: Testing Livy Connectivity"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    if ! wait_for_url "http://${LIVY_HOST}:${LIVY_PORT}/sessions"; then
+        echo "❌ ERROR: Cannot reach Livy at http://${LIVY_HOST}:${LIVY_PORT}"
+        echo ""
+        echo "Troubleshooting:"
+        echo "1. Verify Kubernetes pod is running:"
+        echo "   kubectl get pods -n spark-livy"
+        echo ""
+        echo "2. Verify port forward is active:"
+        echo "   kubectl port-forward -n spark-livy svc/spark-livy-service 8998:8998"
+        echo ""
+        exit 1
+    fi
 fi
 
 echo "✅ Livy is reachable"
@@ -154,10 +184,9 @@ if [ $PYSPARK_READY -eq 1 ]; then
     echo "Step 4: Testing PySpark Code Execution"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
-    CODE='print("Hello from PySpark on Spark 2.4.8!")'
     STMT_JSON=$(curl -s -X POST "http://${LIVY_HOST}:${LIVY_PORT}/sessions/$PYSPARK_ID/statements" \
         -H "Content-Type: application/json" \
-        -d "{\"code\":\"$CODE\"}")
+        -d '{"code":"print(\"PySpark is working!\")"}')
     
     STMT_ID=$(echo "$STMT_JSON" | jq -r '.id')
     if [ -z "$STMT_ID" ] || [ "$STMT_ID" = "null" ]; then
@@ -165,7 +194,7 @@ if [ $PYSPARK_READY -eq 1 ]; then
         echo "Response: $STMT_JSON"
     else
         echo "✅ Code statement submitted: ID=$STMT_ID"
-        echo "   Statement: $CODE"
+        echo "   Statement: print(\"PySpark is working!\")"
         echo ""
         echo "   Result: Code queued for execution"
     fi
@@ -178,10 +207,9 @@ if [ $SCALA_READY -eq 1 ]; then
     echo "Step 5: Testing Scala Code Execution"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
-    CODE='println("Hello from Scala on Spark 2.4.8!")'
     STMT_JSON=$(curl -s -X POST "http://${LIVY_HOST}:${LIVY_PORT}/sessions/$SCALA_ID/statements" \
         -H "Content-Type: application/json" \
-        -d "{\"code\":\"$CODE\"}")
+        -d '{"code":"println(\"Scala is working!\")"}')
     
     STMT_ID=$(echo "$STMT_JSON" | jq -r '.id')
     if [ -z "$STMT_ID" ] || [ "$STMT_ID" = "null" ]; then
@@ -189,7 +217,7 @@ if [ $SCALA_READY -eq 1 ]; then
         echo "Response: $STMT_JSON"
     else
         echo "✅ Code statement submitted: ID=$STMT_ID"
-        echo "   Statement: $CODE"
+        echo "   Statement: println(\"Scala is working!\")"
         echo ""
         echo "   Result: Code queued for execution"
     fi

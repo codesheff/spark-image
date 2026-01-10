@@ -431,7 +431,7 @@ If updating major or minor versions (e.g., 2.4.8 → 3.5.0), run ALL tests:
 ### Testing Tools & Resources
 
 **Available Test Scripts**:
-- `scripts/test-livy-jobs.sh` - Automated PySpark/Scala session test
+- `scripts/test-livy.sh` - Automated PySpark/Scala session test
 - `scripts/submit-k8s-job.sh` - Job submission example
 - `scripts/health-check.sh` - Basic health verification
 
