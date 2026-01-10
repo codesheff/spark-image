@@ -180,7 +180,28 @@ Output:
 ✅ TEST PASSED - Both PySpark and Scala sessions working
 ```
 
-### 4. Check System Health
+### 4. Test Dynamic Executor Pod Creation
+
+To verify Kubernetes backend integration and dynamic executor pod creation:
+
+```bash
+# Ensure port forwarding is active
+kubectl port-forward -n spark-livy svc/spark-livy-service 8998:8998 &
+
+# Run the dynamic executor test
+./scripts/test-dynamic-executors.sh
+```
+
+This script:
+- Creates a Livy session with Kubernetes backend
+- Submits large distributed workloads (100M+ items)
+- Monitors for executor pod creation
+- Validates RBAC permissions and dynamic allocation
+- Reports comprehensive test results
+
+See [DYNAMIC_EXECUTOR_TEST_SCRIPT.md](./DYNAMIC_EXECUTOR_TEST_SCRIPT.md) for detailed usage.
+
+### 5. Check System Health
 
 ```bash
 ./scripts/health-check.sh

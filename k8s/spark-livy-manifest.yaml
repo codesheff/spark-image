@@ -256,9 +256,19 @@ spec:
           readOnly: true
         - name: spark-events
           mountPath: /tmp/spark-events
+        - name: pod-templates
+          mountPath: /opt/spark/templates
+          readOnly: true
       volumes:
       - name: spark-config
         configMap:
           name: spark-config
       - name: spark-events
         emptyDir: {}
+      - name: pod-templates
+        projected:
+          sources:
+          - configMap:
+              name: spark-driver-pod-template
+          - configMap:
+              name: spark-executor-pod-template
