@@ -10,6 +10,26 @@ LIVY_HOST="${1:-localhost}"
 LIVY_PORT="${2:-8998}"
 JOB_NAME="${3:-spark-pi-job}"
 
+# Test connectivity only for port-forward mode
+
+echo "Step 1: Testing Livy Connectivity"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if ! wait_for_url "http://${LIVY_HOST}:${LIVY_PORT}/sessions"; then
+    echo "❌ ERROR: Cannot reach Livy at http://${LIVY_HOST}:${LIVY_PORT}"
+    echo ""
+    echo "Troubleshooting:"
+    echo "1. Verify Kubernetes pod is running:"
+    echo "   kubectl get pods -n spark-livy"
+    echo ""
+    echo "2. Verify port forward is active:"
+    echo "   kubectl port-forward -n spark-livy svc/spark-livy-service 8998:8998"
+    echo ""
+    exit 1
+fi
+
+echo "✅ Livy is reachable"
+echo ""
+
 echo "========================================="
 echo "Spark Job Submission to Livy (K8s Backend)"
 echo "========================================="

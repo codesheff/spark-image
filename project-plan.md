@@ -84,13 +84,23 @@ This project aims to build a Docker image for Apache Livy and Apache Spark to be
 - [ ] Create documentation on new features and breaking changes
 - [ ] Document migration path for users (Spark 2.4.8 → 3.5.x)
 
-## Phase 8: Testing & Documentation ⏳ PENDING
-**Status: Foundation in place, expansion required**
+## Phase 8: Testing & Documentation ⏳ IN PROGRESS
+**Status: Foundation complete, comprehensive documentation added**
 
-**Current Work:**
+**Completed Work:**
 - [x] Created test suite for Spark 2.4.8 + Livy 0.7.1 (session creation verified)
 - [x] Documented version compatibility matrix (VERSION_MATRIX.md)
 - [x] Created build-image.sh for flexible version management
+- [x] Created comprehensive README with quick-start guides, examples, and troubleshooting
+- [x] Documented all supported configurations and usage patterns
+- [x] Added Kubernetes deployment instructions and health check procedures
+- [x] Created comprehensive TROUBLESHOOTING.md guide covering:
+  - [x] Container/Pod issues (Pending, CrashLoopBackOff, Not Ready)
+  - [x] Session creation issues and debugging
+  - [x] Code execution issues and interpreter crashes
+  - [x] Network and connectivity issues
+  - [x] Performance and resource issues
+  - [x] Version compatibility issues
 
 **Remaining Tasks:**
 - [ ] Expand test cases to include:
@@ -99,16 +109,6 @@ This project aims to build a Docker image for Apache Livy and Apache Spark to be
   - [ ] RDD operations (Scala)
   - [ ] Kubernetes scheduler backend with custom pod templates
   - [ ] Dynamic executor scaling
-- [ ] Write comprehensive README with:
-  - [ ] Quick start guide for different versions
-  - [ ] Build instructions with version examples
-  - [ ] Kubernetes deployment guide
-  - [ ] Configuration customization guide
-- [ ] Create troubleshooting guide covering:
-  - [ ] Session creation failures
-  - [ ] Memory issues and tuning
-  - [ ] Kubernetes pod template configuration
-  - [ ] Version compatibility issues
 - [ ] Add CI/CD pipeline (GitHub Actions):
   - [ ] Automated Docker build on commits
   - [ ] Multi-version builds (2.4.8, 3.5.x, cutting-edge)
