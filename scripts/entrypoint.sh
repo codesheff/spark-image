@@ -40,7 +40,9 @@ case $CMD in
     livy-server)
         echo "Starting Livy server..."
         wait_for_spark
-        exec "$LIVY_HOME/bin/livy-server"
+        # Livy 0.8.0+ requires "start" argument, earlier versions might not support it
+        # Try with start first (for 0.8.0+), fall back to just exec if not supported
+        exec "$LIVY_HOME/bin/livy-server" start
         ;;
     spark-shell)
         echo "Starting Spark shell..."

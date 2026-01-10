@@ -23,23 +23,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Build arguments with defaults (Spark 2.4.8 + Livy 0.7.1 for compatibility)
 ARG SPARK_VERSION=2.4.8
 ARG LIVY_VERSION=0.7.1
+ARG HADOOP_DIST=hadoop2.7
 
-# Download Spark
-RUN wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && \
-    tar -xzf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && \
-    rm spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+# Download Spark (handle different Hadoop distributions)
+RUN if [ "${SPARK_VERSION}" = "2.4.8" ] || [ "${SPARK_VERSION}" = "2.4.7" ]; then \
+      wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && \
+      tar -xzf spark-${SPARK_VERSION}-bin-hadoop2.7.tgz && \
+      rm spark-${SPARK_VERSION}-bin-hadoop2.7.tgz; \
+    else \
+      wget https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+      tar -xzf spark-${SPARK_VERSION}-bin-hadoop3.tgz && \
+      rm spark-${SPARK_VERSION}-bin-hadoop3.tgz; \
+    fi
 
-# Download Livy
-RUN wget https://archive.apache.org/dist/incubator/livy/${LIVY_VERSION}-incubating/apache-livy-${LIVY_VERSION}-incubating-bin.zip && \
-    unzip apache-livy-${LIVY_VERSION}-incubating-bin.zip && \
-    rm apache-livy-${LIVY_VERSION}-incubating-bin.zip
+# Download Livy (different naming conventions for 0.8.0)
+RUN if [ "${LIVY_VERSION}" = "0.8.0" ]; then \
+      wget https://archive.apache.org/dist/incubator/livy/${LIVY_VERSION}-incubating/apache-livy-${LIVY_VERSION}-incubating_2.12-bin.zip && \
+      unzip apache-livy-${LIVY_VERSION}-incubating_2.12-bin.zip && \
+      rm apache-livy-${LIVY_VERSION}-incubating_2.12-bin.zip; \
+    else \
+      wget https://archive.apache.org/dist/incubator/livy/${LIVY_VERSION}-incubating/apache-livy-${LIVY_VERSION}-incubating-bin.zip && \
+      unzip apache-livy-${LIVY_VERSION}-incubating-bin.zip && \
+      rm apache-livy-${LIVY_VERSION}-incubating-bin.zip; \
+    fi
 
 # Stage 2: Runtime
 FROM eclipse-temurin:11-jdk-jammy
 
 ARG SPARK_VERSION=2.4.8
-ARG LIVY_VERSION=0.7.1
-ARG SPARK_VERSION=3.3.2
 ARG LIVY_VERSION=0.7.1
 
 WORKDIR /opt
@@ -57,10 +68,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Spark from builder (handle both hadoop2.7 and hadoop3 versions)
-COPY --from=builder /tmp/spark-${SPARK_VERSION}-bin-hadoop* /opt/spark/
+COPY --from=builder /tmp/spark-${SPARK_VERSION}-bin-hadoop*/ /opt/spark/
 
-# Copy Livy from builder
-COPY --from=builder /tmp/apache-livy-${LIVY_VERSION}-incubating-bin /opt/livy
+# Copy Livy from builder (handle different directory naming with wildcard)
+COPY --from=builder /tmp/apache-livy-${LIVY_VERSION}-incubating*-bin/ /opt/livy/
 
 # Create non-root user and directories
 RUN useradd -m -s /bin/bash spark && \

@@ -69,7 +69,18 @@ See [VERSION_MATRIX.md](./VERSION_MATRIX.md) for detailed version compatibility 
 
 ## Building Images with Different Versions
 
-The `build-image.sh` script allows flexible version management:
+### When to Use `build-image.sh`
+
+Use the `build-image.sh` script when you need to:
+- **Build custom version combinations** - Mix Spark and Livy versions not in standard releases (e.g., Spark 3.5.7 + Livy 0.8.0)
+- **Test new versions locally** - Quickly build and test alpha/beta versions before release
+- **Maintain multiple images** - Build stable, testing, and cutting-edge versions with one tool
+- **Push to Docker Hub** - Build and push in one command with `--push` flag
+- **Use custom registries** - Tag images for private registries or custom namespaces
+
+Use `docker build` directly if you only need the default versions (Spark 2.4.8 + Livy 0.7.1).
+
+### Build Commands
 
 ```bash
 # Build Spark 2.4.8 with Livy 0.7.1
@@ -80,6 +91,9 @@ The `build-image.sh` script allows flexible version management:
 
 # With custom registry
 ./build-image.sh 2.4.8 0.7.1 myregistry/spark-livy:custom --push
+
+# Build cutting-edge versions
+./build-image.sh 3.5.7 0.8.0 spark-livy:cutting-edge --push
 ```
 
 ## Configuration
@@ -400,6 +414,30 @@ For issues or questions:
 2. Review [VERSION_MATRIX.md](./VERSION_MATRIX.md) for compatibility issues
 3. Check Kubernetes pod logs: `kubectl logs -n spark-livy <pod>`
 4. Check Livy session logs: `curl http://localhost:8998/sessions/0 | jq '.log'`
+
+## Release Management
+
+### Preparing and Releasing New Versions
+
+For guidance on preparing and releasing new Docker images with updated Spark and Livy versions, see [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md).
+
+The release checklist provides:
+- **Pre-release planning** - Version research and compatibility checks
+- **Development workflow** - Build, test, and staging procedures
+- **Testing procedures** - Kubernetes validation and performance benchmarking
+- **Documentation updates** - All required documentation changes
+- **Release procedures** - Docker Hub push and rollout steps
+- **Monitoring and rollback** - Production deployment and contingency planning
+
+**Quick workflow overview:**
+1. Research new versions (1-2 weeks)
+2. Build and test locally (1-2 weeks)
+3. Deploy to staging Kubernetes (3-5 days)
+4. Update documentation (2-3 days)
+5. Final QA validation (1-2 days)
+6. Push to Docker Hub and deploy (1 day)
+
+See [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) for complete step-by-step instructions.
 
 ## License
 

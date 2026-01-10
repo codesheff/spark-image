@@ -4,6 +4,20 @@
 
 The Spark-Livy Docker build system is now fully configurable, allowing easy version switching without manually editing the Dockerfile.
 
+## When to Use Different Build Methods
+
+### Use `build-image.sh` (Recommended) When:
+- Building custom Spark/Livy version combinations
+- Creating multiple images for different versions (stable, testing, cutting-edge)
+- Pushing to Docker Hub or custom registries
+- Automating version-based builds in CI/CD
+- Testing alpha/beta versions before release
+
+### Use `docker build` directly When:
+- Testing default versions (Spark 2.4.8 + Livy 0.7.1) locally
+- Building with minimal overhead
+- Integrating with custom build systems
+
 ## Quick Start
 
 ### Default Build (Spark 2.4.8 + Livy 0.7.1)

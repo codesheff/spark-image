@@ -8,7 +8,7 @@ set -e
 LIVY_HOST="${1:-localhost}"
 LIVY_PORT="${2:-8998}"
 
-USE_EXEC="${3:-true}"
+USE_EXEC="${3:-false}"
 
 if [ "$USE_EXEC" = "true" ]; then
     echo "Using direct pod execution method"
