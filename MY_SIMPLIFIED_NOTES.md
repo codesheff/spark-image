@@ -4,6 +4,7 @@
 ## To rebuild and publish images
 `
 to be added
+./build-all-images.sh   # ( this calls ./build-image.sh)
 `
 
 ## deploy to kubernetes ( and also to recreate the Kustomize patch files)
